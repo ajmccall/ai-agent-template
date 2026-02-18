@@ -1,0 +1,19 @@
+# Copy to .envrc for strict per-repo identity.
+# Profiles are stored under this repository only (never shared via $HOME).
+# Anchor to the .envrc location so paths stay repo-scoped even from subdirectories.
+REPO_ROOT="$(cd "$(dirname "${DIRENV_FILE}")" && pwd)"
+PROFILE_DIR="${REPO_ROOT}/.agent-profile"
+
+# GitHub CLI / Copilot CLI account scope (must be logged in for this repo profile)
+export GH_CONFIG_DIR="${PROFILE_DIR}/gh"
+export GH_TOKEN=""
+export GITHUB_TOKEN=""
+
+# Codex account scope
+export CODEX_HOME="${PROFILE_DIR}/codex"
+
+# Claude account scope
+export CLAUDE_CONFIG_DIR="${PROFILE_DIR}/claude"
+
+# Gemini CLI account scope
+export GEMINI_CLI_HOME="${PROFILE_DIR}/gemini"
