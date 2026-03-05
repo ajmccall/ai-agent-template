@@ -4,6 +4,43 @@ This template is designed for companies (and independent consultancies) managing
 
 This repo supports strict `direnv`-based profile switching so each repository uses its own local CLI auth context.
 
+## Quick Start
+
+### Automated Installation (Recommended)
+
+Run the interactive installer from your target repository:
+
+```shell
+cd /path/to/your/project
+bash /path/to/ai-agent-profile-template/install.sh
+```
+
+Or provide the target directory as an argument:
+
+```shell
+/path/to/ai-agent-profile-template/install.sh /path/to/your/project
+```
+
+**The installer will:**
+- ✅ Check and optionally install `direnv` via Homebrew
+- ✅ Download `gum` for a beautiful interactive UI (or fall back to simple prompts)
+- ✅ Present checkboxes to select which AI agents you want (GitHub Copilot, Codex, Claude, Gemini)
+- ✅ Create `.agent-profile/` directory structure for selected agents
+- ✅ Copy `.envrc.example` to `.envrc` (with confirmation if it exists)
+- ✅ Merge AI agent entries into your `.gitignore` (without duplicates)
+- ✅ Optionally copy the `Brewfile`
+- ✅ Provide next steps for authenticating each agent
+
+After installation, follow the on-screen instructions to:
+1. Run `direnv allow` in your repository
+2. Authenticate each AI agent you selected
+
+---
+
+### Manual Installation
+
+If you prefer to set things up manually:
+
 Install local tooling:
 
 ```shell
