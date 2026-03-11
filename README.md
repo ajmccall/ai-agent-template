@@ -26,8 +26,8 @@ Or provide the target directory as an argument:
 - ✅ Download `gum` for a beautiful interactive UI (or fall back to simple prompts)
 - ✅ Present checkboxes to select which AI agents you want (GitHub Copilot, Codex, Claude, Gemini)
 - ✅ Create `.agent-profile/` directory structure for selected agents
-- ✅ Copy `.envrc.example` to `.envrc` (with confirmation if it exists)
-- ✅ Merge AI agent entries into your `.gitignore` (without duplicates)
+- ✅ Generate a `.envrc` containing only the env vars for your selected agents (with confirmation if it exists)
+- ✅ Add `.envrc` and `.agent-profile/` to your `.gitignore` (without duplicates)
 - ✅ Optionally copy the `Brewfile`
 - ✅ Provide next steps for authenticating each agent
 
