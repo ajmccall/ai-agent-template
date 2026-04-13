@@ -17,3 +17,6 @@ export CLAUDE_CONFIG_DIR="${PROFILE_DIR}/claude"
 
 # Gemini CLI account scope
 export GEMINI_CLI_HOME="${PROFILE_DIR}/gemini"
+
+# Pi coding agent account + config scope
+export PI_CODING_AGENT_DIR="${PROFILE_DIR}/pi"

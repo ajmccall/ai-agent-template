@@ -1,17 +1,20 @@
 # Per-Repo AI Agent Profiles
 
-Keep GitHub, Codex, Claude, and Gemini logins scoped to a single repository.
+Keep GitHub, Codex, Claude and Gemini state scoped to a single repository.
 
 This template uses `direnv` to make AI CLI profiles repo-local, so each repository can keep its own isolated login state under `.agent-profile/` instead of reusing global auth from your home directory.
 
 **Good for:** consultants, agencies, multi-org teams, and anyone separating personal/work AI accounts.
 
-## Supported tools
+## Supported tools and account scopes
 
-- ✅ GitHub / Copilot
-- ✅ Codex
-- ✅ Claude
-- ✅ Gemini
+| Tool | Repo-local scope | Account/provider model |
+|---|---|---|
+| Copilot CLI | GitHub CLI profile | GitHub |
+| Codex | Codex CLI profile | OpenAI / ChatGPT |
+| Claude CLI | Claude CLI profile | Anthropic |
+| Gemini CLI | Gemini CLI profile | Google |
+| Pi TUI | Pi agent directory (`auth.json`, settings, sessions) | Multi-provider: GitHub Copilot, OpenAI Codex, Claude, Gemini, and API-key providers |
 
 ## Sections
 
@@ -46,7 +49,7 @@ This template makes auth local and explicit:
 ## Common use cases
 
 ### Consultant or freelancer
-Use different GitHub / Claude / Codex accounts for different client repositories.
+Use different GitHub / Claude / Codex / Gemini accounts for different client repositories.
 
 ### Agency or studio
 Keep customer AI credentials isolated per project instead of sharing one global machine-wide login.
@@ -57,14 +60,7 @@ Use one identity for company repos and another for side projects.
 ### Testing and demos
 Create temporary or sandboxed agent profiles without disturbing your normal setup.
 
-## See it in action
-
-A good demo to add here later:
-- a GIF showing `cd client-a` → `gh auth status`
-- then `cd ../client-b` → different `gh auth status`
-- optionally also show `echo $GH_CONFIG_DIR`
-
-That visual would make the value obvious in a few seconds.
+## 🚧 See it in action
 
 ## Quick start
 
@@ -88,7 +84,7 @@ Or provide the target directory as an argument:
 - checks for `direnv`
 - downloads `gum` for interactive selection when possible
 - lets you choose which agents to configure
-- creates `.agent-profile/` directories for selected agents
+- creates `.agent-profile/` directories for selected agents, including Pi if selected
 - generates `.envrc`
 - updates `.gitignore`
 - optionally copies `Brewfile`
@@ -104,6 +100,8 @@ direnv allow
 Then use your normal AI CLIs as usual.
 
 Most tools will prompt you to authenticate on first run.
+
+#### Github Copilot Additional Steps
 
 GitHub / Copilot is the main exception: if needed, the installer will tell you to run this one-time setup step:
 
@@ -135,7 +133,7 @@ Configure repo-local environment:
 
 ```shell
 cp .envrc.example .envrc
-mkdir -p .agent-profile/{gh,codex,claude,gemini}
+mkdir -p .agent-profile/{gh,codex,claude,gemini,pi}
 direnv allow
 ```
 

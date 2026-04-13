@@ -188,13 +188,14 @@ fi
 echo ""
 
 # Interactive agent selection
-declare -a AGENT_KEYS=("gh" "codex" "claude" "gemini")
+declare -a AGENT_KEYS=("gh" "codex" "claude" "gemini" "pi")
 declare -A AGENTS
 AGENTS=(
     ["gh"]="GitHub Copilot (via gh CLI)"
     ["codex"]="Codex"
     ["claude"]="Claude"
     ["gemini"]="Gemini"
+    ["pi"]="Pi"
 )
 
 SELECTED_AGENTS=()
@@ -307,6 +308,11 @@ generate_envrc() {
                     echo ''
                     echo '# Gemini CLI account scope'
                     echo 'export GEMINI_CLI_HOME="${PROFILE_DIR}/gemini"'
+                    ;;
+                pi)
+                    echo ''
+                    echo '# Pi coding agent account + config scope'
+                    echo 'export PI_CODING_AGENT_DIR="${PROFILE_DIR}/pi"'
                     ;;
             esac
         done

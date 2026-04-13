@@ -16,7 +16,8 @@ your-repo/
     ├── gh/
     ├── codex/
     ├── claude/
-    └── gemini/
+    ├── gemini/
+    └── pi/
 ```
 
 When you `cd` into the repo, `direnv` loads `.envrc`, and the selected tools pick up config from `.agent-profile/...`.
@@ -32,6 +33,7 @@ export GITHUB_TOKEN=""
 export CODEX_HOME="${PROFILE_DIR}/codex"
 export CLAUDE_CONFIG_DIR="${PROFILE_DIR}/claude"
 export GEMINI_CLI_HOME="${PROFILE_DIR}/gemini"
+export PI_CODING_AGENT_DIR="${PROFILE_DIR}/pi"
 ```
 
 ## Why paths are anchored from `.envrc`
@@ -105,6 +107,15 @@ Gemini is redirected with:
 ```shell
 export GEMINI_CLI_HOME="${PROFILE_DIR}/gemini"
 ```
+
+### Pi
+Pi is redirected with:
+
+```shell
+export PI_CODING_AGENT_DIR="${PROFILE_DIR}/pi"
+```
+
+This scopes Pi's repo-local `auth.json`, `settings.json`, sessions, and other agent state away from the default `~/.pi/agent` directory.
 
 ## Operational model
 
