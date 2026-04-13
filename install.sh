@@ -20,6 +20,22 @@ GUM_VERSION="0.17.0"
 GUM=""
 TMPFILES=()
 
+has_tty() {
+    [[ -t 0 && -t 1 ]]
+}
+
+confirm_default_no() {
+    local prompt="$1"
+
+    if [[ -n "$GUM" ]] && has_tty; then
+        "$GUM" confirm "$prompt"
+    else
+        read -p "$(echo -e ${YELLOW}${prompt} [y/N]:${NC} )" -n 1 -r
+        echo
+        [[ $REPLY =~ ^[Yy]$ ]]
+    fi
+}
+
 # Cleanup function for temporary files
 cleanup_tmpfiles() {
     local f
@@ -95,14 +111,14 @@ bootstrap_gum() {
     local os arch asset base gum_tmpdir gum_path
     os="$(detect_os)"
     arch="$(detect_arch)"
-    
+
     if [[ "$os" == "unsupported" || "$arch" == "unknown" ]]; then
         warning "Unsupported OS/arch ($os/$arch), skipping gum"
         return 1
     fi
 
     info "Downloading gum for better UI experience..."
-    
+
     asset="gum_${GUM_VERSION}_${os}_${arch}.tar.gz"
     base="https://github.com/charmbracelet/gum/releases/download/v${GUM_VERSION}"
 
@@ -183,20 +199,20 @@ AGENTS=(
 
 SELECTED_AGENTS=()
 
-if [[ -n "$GUM" ]]; then
-    # Use gum for beautiful checkbox UI
+if [[ -n "$GUM" ]] && has_tty; then
+    # Use gum for beautiful checkbox UI when a TTY is available
     info "Which AI agents would you like to configure?"
     echo ""
-    
+
     # Build options for gum
     OPTIONS=()
     for key in "${AGENT_KEYS[@]}"; do
         OPTIONS+=("${AGENTS[$key]}")
     done
-    
+
     # Let user select with checkboxes
-    SELECTED=$("$GUM" choose --no-limit --header "Select AI agents (use space to select, enter to confirm):" "${OPTIONS[@]}" < /dev/tty || true)
-    
+    SELECTED=$("$GUM" choose --no-limit --header "Select AI agents (use space to select, enter to confirm):" "${OPTIONS[@]}" || true)
+
     # Map selections back to keys
     while IFS= read -r line; do
         for key in "${AGENT_KEYS[@]}"; do
@@ -222,8 +238,8 @@ else
 fi
 
 if [[ ${#SELECTED_AGENTS[@]} -eq 0 ]]; then
-    if [[ -n "$GUM" ]]; then
-        if ! "$GUM" confirm "No agents selected. Continue anyway?" < /dev/tty; then
+    if [[ -n "$GUM" ]] && has_tty; then
+        if ! "$GUM" confirm "No agents selected. Continue anyway?"; then
             warning "Installation cancelled."
             exit 0
         fi
@@ -301,8 +317,8 @@ if [[ -f ".envrc" ]]; then
     warning ".envrc already exists"
 
     SHOULD_OVERWRITE=false
-    if [[ -n "$GUM" ]]; then
-        if "$GUM" confirm "Overwrite existing .envrc?" < /dev/tty; then
+    if [[ -n "$GUM" ]] && has_tty; then
+        if "$GUM" confirm "Overwrite existing .envrc?"; then
             SHOULD_OVERWRITE=true
         fi
     else
@@ -370,8 +386,8 @@ fi
 # Copy Brewfile if it doesn't exist
 if [[ -f "$SCRIPT_DIR/Brewfile" ]] && [[ ! -f "Brewfile" ]]; then
     SHOULD_COPY=false
-    if [[ -n "$GUM" ]]; then
-        if "$GUM" confirm "Copy Brewfile?" < /dev/tty; then
+    if [[ -n "$GUM" ]] && has_tty; then
+        if "$GUM" confirm "Copy Brewfile?"; then
             SHOULD_COPY=true
         fi
     else
@@ -381,10 +397,50 @@ if [[ -f "$SCRIPT_DIR/Brewfile" ]] && [[ ! -f "Brewfile" ]]; then
             SHOULD_COPY=true
         fi
     fi
-    
+
     if [[ "$SHOULD_COPY" == true ]]; then
         cp "$SCRIPT_DIR/Brewfile" "Brewfile"
         success "Copied Brewfile"
+    fi
+fi
+
+HAS_GH_SELECTED=false
+for agent in "${SELECTED_AGENTS[@]}"; do
+    if [[ "$agent" == "gh" ]]; then
+        HAS_GH_SELECTED=true
+        break
+    fi
+done
+
+GH_AUTH_DONE=false
+GH_AUTH_NEEDS_MANUAL=false
+GH_AUTH_MANUAL_REASON=""
+
+if [[ "$HAS_GH_SELECTED" == true ]]; then
+    echo ""
+    info "GitHub / Copilot setup"
+
+    if command -v gh >/dev/null 2>&1; then
+        if has_tty; then
+            if confirm_default_no "Run repo-local GitHub auth now?"; then
+                if GH_CONFIG_DIR="$PWD/.agent-profile/gh" gh auth login; then
+                    GH_AUTH_DONE=true
+                    success "GitHub auth completed for this repository profile"
+                else
+                    GH_AUTH_NEEDS_MANUAL=true
+                    GH_AUTH_MANUAL_REASON="GitHub auth did not complete during install."
+                fi
+            else
+                GH_AUTH_NEEDS_MANUAL=true
+                GH_AUTH_MANUAL_REASON="GitHub auth was skipped during install."
+            fi
+        else
+            GH_AUTH_NEEDS_MANUAL=true
+            GH_AUTH_MANUAL_REASON="Installer was not running interactively."
+        fi
+    else
+        GH_AUTH_NEEDS_MANUAL=true
+        GH_AUTH_MANUAL_REASON="GitHub CLI ('gh') was not found."
     fi
 fi
 
@@ -413,33 +469,23 @@ echo -e "   ${GREEN}direnv allow${NC}"
 echo ""
 
 if [[ ${#SELECTED_AGENTS[@]} -gt 0 ]]; then
-    echo "2. Authenticate each AI agent:"
+    echo "2. Use your normal AI CLI commands as usual."
+    echo "   Most tools will prompt you to authenticate on first run."
     echo ""
-    
-    for agent in "${SELECTED_AGENTS[@]}"; do
-        case $agent in
-            gh)
-                echo -e "   ${BLUE}GitHub Copilot:${NC}"
-                echo "   GH_CONFIG_DIR=\"\$PWD/.agent-profile/gh\" gh auth login"
-                echo ""
-                ;;
-            codex)
-                echo -e "   ${BLUE}Codex:${NC}"
-                echo "   codex  # Authenticate when prompted"
-                echo ""
-                ;;
-            claude)
-                echo -e "   ${BLUE}Claude:${NC}"
-                echo "   claude  # Authenticate when prompted"
-                echo ""
-                ;;
-            gemini)
-                echo -e "   ${BLUE}Gemini:${NC}"
-                echo "   gemini  # Authenticate when prompted"
-                echo ""
-                ;;
-        esac
-    done
+fi
+
+if [[ "$GH_AUTH_DONE" == true ]]; then
+    echo -e "${BLUE}GitHub / Copilot:${NC}"
+    echo "   Repo-local GitHub auth was completed during install."
+    echo ""
+fi
+
+if [[ "$GH_AUTH_NEEDS_MANUAL" == true ]]; then
+    echo -e "${BLUE}Additional GitHub / Copilot step:${NC}"
+    echo "   ${GH_AUTH_MANUAL_REASON}"
+    echo "   Run this once inside the repository:"
+    echo "   GH_CONFIG_DIR=\"\$PWD/.agent-profile/gh\" gh auth login"
+    echo ""
 fi
 
 echo "3. Start using your AI agents in this repository!"
