@@ -56,10 +56,12 @@ Without anchoring to `DIRENV_FILE`, relative paths could depend on the current w
 1. validates the target directory
 2. checks for `direnv`
 3. uses `gum` for interactive selection when available and when a TTY exists
-4. creates `.agent-profile/` and selected subdirectories
-5. generates `.envrc` for the chosen tools
-6. updates `.gitignore` with local-only entries
-7. optionally copies `Brewfile`
+4. detects agents already configured in `.envrc`
+5. creates `.agent-profile/` and selected subdirectories
+6. generates or updates the installer-managed `.envrc` section
+7. runs `direnv allow` after generating or updating `.envrc`
+8. updates `.gitignore` with local-only entries
+9. optionally copies `Brewfile`
 
 ## Why `.gitignore` is updated
 

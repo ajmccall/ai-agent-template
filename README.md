@@ -83,9 +83,11 @@ Or provide the target directory as an argument:
 
 - checks for `direnv`
 - downloads `gum` for interactive selection when possible
-- lets you choose which agents to configure
+- detects agents already configured in `.envrc`
+- lets you choose which additional agents to configure
 - creates `.agent-profile/` directories for selected agents, including Pi if selected
-- generates `.envrc`
+- generates or updates the installer-managed `.envrc` section
+- runs `direnv allow` after generating or updating `.envrc`
 - updates `.gitignore`
 - optionally copies `Brewfile`
 - if GitHub CLI is installed and you selected GitHub/Copilot, can optionally run repo-local `gh auth login`
@@ -93,9 +95,8 @@ Or provide the target directory as an argument:
 
 ### After install
 
-```shell
-direnv allow
-```
+If the installer generated or updated `.envrc`, it runs `direnv allow` automatically.
+If that fails, the installer will tell you to run it manually.
 
 Then use your normal AI CLIs as usual.
 
