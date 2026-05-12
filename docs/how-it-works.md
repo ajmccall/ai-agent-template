@@ -14,6 +14,7 @@ your-repo/
 ├── .envrc
 └── .agent-profile/
     ├── gh/
+    ├── copilot/
     ├── codex/
     ├── claude/
     ├── gemini/
@@ -30,6 +31,7 @@ Depending on which agents you select, the installer writes some of these variabl
 export GH_CONFIG_DIR="${PROFILE_DIR}/gh"
 export GH_TOKEN=""
 export GITHUB_TOKEN=""
+export COPILOT_HOME="${PROFILE_DIR}/copilot"
 export CODEX_HOME="${PROFILE_DIR}/codex"
 export CLAUDE_CONFIG_DIR="${PROFILE_DIR}/claude"
 export GEMINI_CLI_HOME="${PROFILE_DIR}/gemini"
@@ -58,10 +60,11 @@ Without anchoring to `DIRENV_FILE`, relative paths could depend on the current w
 3. uses `gum` for interactive selection when available and when a TTY exists
 4. detects agents already configured in `.envrc`
 5. creates `.agent-profile/` and selected subdirectories
-6. generates or updates the installer-managed `.envrc` section
-7. runs `direnv allow` after generating or updating `.envrc`
-8. updates `.gitignore` with local-only entries
-9. optionally copies `Brewfile`
+6. creates a repo-local Claude statusline for new Claude profiles
+7. generates or updates the installer-managed `.envrc` section
+8. runs `direnv allow` after generating or updating `.envrc`
+9. updates `.gitignore` with local-only entries
+10. optionally copies `Brewfile`
 
 ## Why `.gitignore` is updated
 
@@ -76,7 +79,7 @@ That prevents repo-local auth state from being committed.
 
 ## Tool-specific notes
 
-### GitHub CLI / Copilot
+### GitHub CLI
 GitHub auth is redirected with:
 
 ```shell
@@ -88,6 +91,15 @@ Authenticate with:
 ```shell
 GH_CONFIG_DIR="$PWD/.agent-profile/gh" gh auth login
 ```
+
+### Copilot CLI
+Copilot CLI is redirected with:
+
+```shell
+export COPILOT_HOME="${PROFILE_DIR}/copilot"
+```
+
+This scopes Copilot's auth state, MCP server configuration, plugins, sessions, and settings away from the default `~/.copilot` directory.
 
 ### Codex
 Codex is redirected with:
@@ -102,6 +114,8 @@ Claude is redirected with:
 ```shell
 export CLAUDE_CONFIG_DIR="${PROFILE_DIR}/claude"
 ```
+
+When Claude is selected, the installer also creates `.agent-profile/claude/statusline.sh` and a matching `.agent-profile/claude/settings.json` if those files do not already exist. This preserves a useful statusline in the isolated profile without copying unrelated global Claude state from `~/.claude`.
 
 ### Gemini
 Gemini is redirected with:

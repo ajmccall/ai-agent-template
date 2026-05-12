@@ -188,10 +188,11 @@ fi
 echo ""
 
 # Interactive agent selection
-declare -a AGENT_KEYS=("gh" "codex" "claude" "gemini" "pi")
+declare -a AGENT_KEYS=("gh" "copilot" "codex" "claude" "gemini" "pi")
 declare -A AGENTS
 AGENTS=(
-    ["gh"]="GitHub Copilot (via gh CLI)"
+    ["gh"]="GitHub CLI"
+    ["copilot"]="GitHub Copilot CLI"
     ["codex"]="Codex"
     ["claude"]="Claude"
     ["gemini"]="Gemini"
@@ -237,6 +238,7 @@ DETECTED_AGENTS=()
 
 if [[ -f ".envrc" ]]; then
     grep -qE '^[[:space:]]*export[[:space:]]+GH_CONFIG_DIR=' .envrc && DETECTED_AGENTS+=("gh")
+    grep -qE '^[[:space:]]*export[[:space:]]+COPILOT_HOME=' .envrc && DETECTED_AGENTS+=("copilot")
     grep -qE '^[[:space:]]*export[[:space:]]+CODEX_HOME=' .envrc && DETECTED_AGENTS+=("codex")
     grep -qE '^[[:space:]]*export[[:space:]]+CLAUDE_CONFIG_DIR=' .envrc && DETECTED_AGENTS+=("claude")
     grep -qE '^[[:space:]]*export[[:space:]]+GEMINI_CLI_HOME=' .envrc && DETECTED_AGENTS+=("gemini")
@@ -332,6 +334,101 @@ for agent in "${SELECTED_AGENTS[@]}"; do
     fi
 done
 
+setup_claude_statusline() {
+    local claude_dir=".agent-profile/claude"
+    local settings_file="${claude_dir}/settings.json"
+    local statusline_script="${claude_dir}/statusline.sh"
+
+    if [[ ! -f "$statusline_script" ]]; then
+        cat > "$statusline_script" <<'CLAUDE_STATUSLINE'
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+input="$(cat)"
+
+json_value() {
+    local key="$1"
+    python3 -c '
+import json
+import sys
+
+data = json.load(sys.stdin)
+value = data
+for part in sys.argv[1].split("."):
+    if not isinstance(value, dict):
+        value = ""
+        break
+    value = value.get(part, "")
+if value is None:
+    value = ""
+print(value)
+' "$key" <<< "$input"
+}
+
+model="$(json_value model.display_name)"
+current_dir="$(json_value workspace.current_dir)"
+context_pct="$(json_value context_window.used_percentage)"
+dir_name="${current_dir##*/}"
+
+branch=""
+dirty=""
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    branch="$(git branch --show-current 2>/dev/null || true)"
+    if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
+        dirty="*"
+    fi
+fi
+
+if [[ -z "$context_pct" ]]; then
+    context_pct="0"
+fi
+context_pct="${context_pct%.*}"
+
+cyan=$'\033[36m'
+green=$'\033[32m'
+reset=$'\033[0m'
+
+line="${cyan}${dir_name}${reset}"
+if [[ -n "$branch" ]]; then
+    line+=" | ${branch}${dirty}"
+fi
+if [[ -n "$model" ]]; then
+    line+=" | ${model}"
+fi
+line+=" | ${green}${context_pct}%${reset}"
+
+echo -e "$line"
+CLAUDE_STATUSLINE
+        chmod +x "$statusline_script"
+        success "Created Claude statusline script"
+    else
+        info "Claude statusline script already exists"
+    fi
+
+    if [[ ! -f "$settings_file" ]]; then
+        {
+            echo '{'
+            echo '  "statusLine": {'
+            echo '    "type": "command",'
+            echo '    "command": "bash \"$CLAUDE_CONFIG_DIR/statusline.sh\"",'
+            echo '    "padding": 0'
+            echo '  }'
+            echo '}'
+        } > "$settings_file"
+        success "Created Claude settings with repo-local statusline"
+    elif grep -q '"statusLine"' "$settings_file"; then
+        info "Claude settings already include statusLine"
+    else
+        warning "Claude settings already exist without statusLine: ${settings_file}"
+        warning "Add a statusLine entry manually or run /statusline inside local Claude."
+    fi
+}
+
+if agent_is_selected "claude"; then
+    setup_claude_statusline
+fi
+
 # Generate the installer-managed .envrc block for selected agents.
 ENVRC_BEGIN_MARKER="# >>> ai-agent-profile-template >>>"
 ENVRC_END_MARKER="# <<< ai-agent-profile-template <<<"
@@ -352,10 +449,15 @@ generate_envrc_block() {
             case $agent in
                 gh)
                     echo ''
-                    echo '# GitHub CLI / Copilot CLI account scope'
+                    echo '# GitHub CLI account scope'
                     echo 'export GH_CONFIG_DIR="${PROFILE_DIR}/gh"'
                     echo 'export GH_TOKEN=""'
                     echo 'export GITHUB_TOKEN=""'
+                    ;;
+                copilot)
+                    echo ''
+                    echo '# GitHub Copilot CLI account, MCP, plugins, sessions, and settings scope'
+                    echo 'export COPILOT_HOME="${PROFILE_DIR}/copilot"'
                     ;;
                 codex)
                     echo ''
@@ -558,7 +660,7 @@ GH_AUTH_MANUAL_REASON=""
 
 if [[ "$HAS_GH_SELECTED" == true ]]; then
     echo ""
-    info "GitHub / Copilot setup"
+    info "GitHub CLI setup"
 
     if command -v gh >/dev/null 2>&1; then
         if has_tty; then
@@ -623,13 +725,13 @@ if [[ ${#SELECTED_AGENTS[@]} -gt 0 ]]; then
 fi
 
 if [[ "$GH_AUTH_DONE" == true ]]; then
-    echo -e "${BLUE}GitHub / Copilot:${NC}"
+    echo -e "${BLUE}GitHub CLI:${NC}"
     echo "   Repo-local GitHub auth was completed during install."
     echo ""
 fi
 
 if [[ "$GH_AUTH_NEEDS_MANUAL" == true ]]; then
-    echo -e "${BLUE}Additional GitHub / Copilot step:${NC}"
+    echo -e "${BLUE}Additional GitHub CLI step:${NC}"
     echo "   ${GH_AUTH_MANUAL_REASON}"
     echo "   Run this once inside the repository:"
     echo "   GH_CONFIG_DIR=\"\$PWD/.agent-profile/gh\" gh auth login"

@@ -1,6 +1,6 @@
 # Per-Repo AI Agent Profiles
 
-Keep GitHub, Codex, Claude and Gemini state scoped to a single repository.
+Keep GitHub, Copilot, Codex, Claude and Gemini state scoped to a single repository.
 
 This template uses `direnv` to make AI CLI profiles repo-local, so each repository can keep its own isolated login state under `.agent-profile/` instead of reusing global auth from your home directory.
 
@@ -10,9 +10,10 @@ This template uses `direnv` to make AI CLI profiles repo-local, so each reposito
 
 | Tool | Repo-local scope | Account/provider model |
 |---|---|---|
-| Copilot CLI | GitHub CLI profile | GitHub |
+| GitHub CLI | GitHub CLI profile | GitHub |
+| Copilot CLI | Copilot CLI profile (`COPILOT_HOME`) | GitHub, MCP servers, plugins, sessions |
 | Codex | Codex CLI profile | OpenAI / ChatGPT |
-| Claude CLI | Claude CLI profile | Anthropic |
+| Claude CLI | Claude CLI profile plus repo-local statusline bootstrap | Anthropic |
 | Gemini CLI | Gemini CLI profile | Google |
 | Pi TUI | Pi agent directory (`auth.json`, settings, sessions) | Multi-provider: GitHub Copilot, OpenAI Codex, Claude, Gemini, and API-key providers |
 
@@ -22,7 +23,7 @@ This template uses `direnv` to make AI CLI profiles repo-local, so each reposito
 
 ## Why this exists
 
-Most AI CLIs store auth and config globally in `~/.config`, `~/.claude`, or other home-directory locations.
+Most AI CLIs store auth and config globally in `~/.config`, `~/.copilot`, `~/.claude`, or other home-directory locations.
 
 That becomes painful when you:
 - work across multiple clients
@@ -85,12 +86,13 @@ Or provide the target directory as an argument:
 - downloads `gum` for interactive selection when possible
 - detects agents already configured in `.envrc`
 - lets you choose which additional agents to configure
-- creates `.agent-profile/` directories for selected agents, including Pi if selected
+- creates `.agent-profile/` directories for selected agents, including Copilot and Pi if selected
+- creates a repo-local Claude statusline for new Claude profiles
 - generates or updates the installer-managed `.envrc` section
 - runs `direnv allow` after generating or updating `.envrc`
 - updates `.gitignore`
 - optionally copies `Brewfile`
-- if GitHub CLI is installed and you selected GitHub/Copilot, can optionally run repo-local `gh auth login`
+- if GitHub CLI is installed and you selected GitHub CLI, can optionally run repo-local `gh auth login`
 - prints any remaining post-install steps
 
 ### After install
@@ -102,13 +104,15 @@ Then use your normal AI CLIs as usual.
 
 Most tools will prompt you to authenticate on first run.
 
-#### Github Copilot Additional Steps
+#### GitHub CLI Additional Steps
 
-GitHub / Copilot is the main exception: if needed, the installer will tell you to run this one-time setup step:
+GitHub CLI auth is the main exception: if needed, the installer will tell you to run this one-time setup step:
 
 ```shell
 GH_CONFIG_DIR="$PWD/.agent-profile/gh" gh auth login
 ```
+
+Copilot CLI uses `COPILOT_HOME`, so its MCP servers, plugins, sessions, and auth state are stored under `.agent-profile/copilot` when that agent is selected. It will prompt for authentication on first use if the local profile is empty.
 
 ## Manual setup
 
@@ -134,7 +138,7 @@ Configure repo-local environment:
 
 ```shell
 cp .envrc.example .envrc
-mkdir -p .agent-profile/{gh,codex,claude,gemini,pi}
+mkdir -p .agent-profile/{gh,copilot,codex,claude,gemini,pi}
 direnv allow
 ```
 
@@ -142,7 +146,7 @@ Then use your normal AI CLIs as usual.
 
 Most tools will prompt you to authenticate on first run.
 
-If you want GitHub / Copilot in this repo-local profile, run:
+If you want GitHub CLI in this repo-local profile, run:
 
 ```shell
 GH_CONFIG_DIR="$PWD/.agent-profile/gh" gh auth login
