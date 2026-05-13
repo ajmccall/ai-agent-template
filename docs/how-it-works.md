@@ -60,7 +60,7 @@ Without anchoring to `DIRENV_FILE`, relative paths could depend on the current w
 3. uses `gum` for interactive selection when available and when a TTY exists
 4. detects agents already configured in `.envrc`
 5. creates `.agent-profile/` and selected subdirectories
-6. creates a repo-local Claude statusline for new Claude profiles
+6. creates a repo-local Claude statusline script and local project settings for new Claude profiles
 7. generates or updates the installer-managed `.envrc` section
 8. runs `direnv allow` after generating or updating `.envrc`
 9. updates `.gitignore` with local-only entries
@@ -73,6 +73,7 @@ These files should stay local:
 ```gitignore
 .envrc
 .agent-profile/
+.claude/settings.local.json
 ```
 
 That prevents repo-local auth state from being committed.
@@ -115,7 +116,7 @@ Claude is redirected with:
 export CLAUDE_CONFIG_DIR="${PROFILE_DIR}/claude"
 ```
 
-When Claude is selected, the installer also creates `.agent-profile/claude/statusline.sh` and a matching `.agent-profile/claude/settings.json` if those files do not already exist. This preserves a useful statusline in the isolated profile without copying unrelated global Claude state from `~/.claude`.
+When Claude is selected, the installer also creates `.agent-profile/claude/statusline.sh` and wires it through `.claude/settings.local.json`. Claude Code reads `statusLine` from its normal settings scopes, so the script lives in the repo-local profile while the setting itself is placed in Claude's project-local settings file.
 
 ### Gemini
 Gemini is redirected with:

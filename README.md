@@ -87,7 +87,7 @@ Or provide the target directory as an argument:
 - detects agents already configured in `.envrc`
 - lets you choose which additional agents to configure
 - creates `.agent-profile/` directories for selected agents, including Copilot and Pi if selected
-- creates a repo-local Claude statusline for new Claude profiles
+- creates a repo-local Claude statusline script and wires it through `.claude/settings.local.json`
 - generates or updates the installer-managed `.envrc` section
 - runs `direnv allow` after generating or updating `.envrc`
 - updates `.gitignore`
@@ -176,12 +176,13 @@ Optionally remove the ignore entries from `.gitignore` if you no longer want the
 ```gitignore
 .envrc
 .agent-profile/
+.claude/settings.local.json
 ```
 
 ## FAQ
 
 ### Is `.agent-profile/` committed?
-No. The installer adds `.envrc` and `.agent-profile/` to `.gitignore`.
+No. The installer adds `.envrc`, `.agent-profile/`, and `.claude/settings.local.json` to `.gitignore`.
 
 ### Do I need every tool?
 No. The installer generates directories and env vars only for the agents you select.

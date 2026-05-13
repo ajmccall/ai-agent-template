@@ -336,8 +336,11 @@ done
 
 setup_claude_statusline() {
     local claude_dir=".agent-profile/claude"
-    local settings_file="${claude_dir}/settings.json"
+    local local_settings_dir=".claude"
+    local local_settings_file="${local_settings_dir}/settings.local.json"
+    local legacy_profile_settings_file="${claude_dir}/settings.json"
     local statusline_script="${claude_dir}/statusline.sh"
+    local statusline_command='bash "$CLAUDE_CONFIG_DIR/statusline.sh"'
 
     if [[ ! -f "$statusline_script" ]]; then
         cat > "$statusline_script" <<'CLAUDE_STATUSLINE'
@@ -406,7 +409,9 @@ CLAUDE_STATUSLINE
         info "Claude statusline script already exists"
     fi
 
-    if [[ ! -f "$settings_file" ]]; then
+    mkdir -p "$local_settings_dir"
+
+    if [[ ! -f "$local_settings_file" ]]; then
         {
             echo '{'
             echo '  "statusLine": {'
@@ -415,13 +420,38 @@ CLAUDE_STATUSLINE
             echo '    "padding": 0'
             echo '  }'
             echo '}'
-        } > "$settings_file"
-        success "Created Claude settings with repo-local statusline"
-    elif grep -q '"statusLine"' "$settings_file"; then
-        info "Claude settings already include statusLine"
+        } > "$local_settings_file"
+        success "Created Claude local settings with repo-local statusline"
+    elif grep -q '"statusLine"' "$local_settings_file"; then
+        info "Claude local settings already include statusLine"
+    elif command -v python3 >/dev/null 2>&1; then
+        STATUSLINE_COMMAND="$statusline_command" python3 - "$local_settings_file" <<'PY'
+import json
+import os
+import sys
+
+settings_path = sys.argv[1]
+with open(settings_path, "r", encoding="utf-8") as f:
+    data = json.load(f)
+
+data["statusLine"] = {
+    "type": "command",
+    "command": os.environ["STATUSLINE_COMMAND"],
+    "padding": 0,
+}
+
+with open(settings_path, "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=2)
+    f.write("\n")
+PY
+        success "Updated Claude local settings with repo-local statusline"
     else
-        warning "Claude settings already exist without statusLine: ${settings_file}"
-        warning "Add a statusLine entry manually or run /statusline inside local Claude."
+        warning "Claude local settings already exist without statusLine: ${local_settings_file}"
+        warning "Install python3 so the installer can merge settings, or run /statusline inside local Claude."
+    fi
+
+    if [[ -f "$legacy_profile_settings_file" ]]; then
+        warning "Found legacy Claude profile settings that Claude Code does not read for statusLine: ${legacy_profile_settings_file}"
     fi
 }
 
@@ -589,6 +619,7 @@ GITIGNORE_ENTRIES=(
     "# AI Agent profiles (local auth, never commit)"
     ".envrc"
     ".agent-profile/"
+    ".claude/settings.local.json"
 )
 
 if [[ -f ".gitignore" ]]; then
