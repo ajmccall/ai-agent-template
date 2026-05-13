@@ -86,6 +86,7 @@ Or provide the target directory as an argument:
 - downloads `gum` for interactive selection when possible
 - detects agents already configured in `.envrc`
 - lets you choose which additional agents to configure
+- preserves existing agents without re-running their auth setup
 - creates `.agent-profile/` directories for selected agents, including Copilot and Pi if selected
 - creates a repo-local Claude statusline script and wires it through `.claude/settings.local.json`
 - generates or updates the installer-managed `.envrc` section
@@ -106,7 +107,7 @@ Most tools will prompt you to authenticate on first run.
 
 #### GitHub CLI Additional Steps
 
-GitHub CLI auth is the main exception: if needed, the installer will tell you to run this one-time setup step:
+GitHub CLI auth is the main exception: when GitHub CLI is newly added, the installer can run repo-local auth or tell you to run this one-time setup step:
 
 ```shell
 GH_CONFIG_DIR="$PWD/.agent-profile/gh" gh auth login

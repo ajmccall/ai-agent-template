@@ -233,8 +233,32 @@ select_agent_once() {
     fi
 }
 
+agent_is_newly_selected() {
+    local needle="$1"
+    local agent
+
+    for agent in "${NEWLY_SELECTED_AGENTS[@]:-}"; do
+        if [[ "$agent" == "$needle" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+select_new_agent_once() {
+    local agent="$1"
+
+    select_agent_once "$agent"
+
+    if ! agent_is_detected "$agent" && ! agent_is_newly_selected "$agent"; then
+        NEWLY_SELECTED_AGENTS+=("$agent")
+    fi
+}
+
 SELECTED_AGENTS=()
 DETECTED_AGENTS=()
+NEWLY_SELECTED_AGENTS=()
 
 if [[ -f ".envrc" ]]; then
     grep -qE '^[[:space:]]*export[[:space:]]+GH_CONFIG_DIR=' .envrc && DETECTED_AGENTS+=("gh")
@@ -262,21 +286,27 @@ if [[ -n "$GUM" ]] && has_tty; then
     # Build options for gum
     OPTIONS=()
     for key in "${AGENT_KEYS[@]}"; do
-        OPTIONS+=("${AGENTS[$key]}")
+        if ! agent_is_detected "$key"; then
+            OPTIONS+=("${AGENTS[$key]}")
+        fi
     done
 
-    # Let user select with checkboxes
-    SELECTED=$("$GUM" choose --no-limit --header "Select agents to add (already configured agents are preserved):" "${OPTIONS[@]}" || true)
+    if [[ ${#OPTIONS[@]} -eq 0 ]]; then
+        info "All supported agents are already configured. Existing agents will be refreshed where applicable."
+    else
+        # Let user select with checkboxes
+        SELECTED=$("$GUM" choose --no-limit --header "Select agents to add (already configured agents are preserved):" "${OPTIONS[@]}" || true)
 
-    # Map selections back to keys
-    while IFS= read -r line; do
-        for key in "${AGENT_KEYS[@]}"; do
-            if [[ "${AGENTS[$key]}" == "$line" ]]; then
-                select_agent_once "$key"
-                break
-            fi
-        done
-    done <<< "$SELECTED"
+        # Map selections back to keys
+        while IFS= read -r line; do
+            for key in "${AGENT_KEYS[@]}"; do
+                if [[ "${AGENTS[$key]}" == "$line" ]]; then
+                    select_new_agent_once "$key"
+                    break
+                fi
+            done
+        done <<< "$SELECTED"
+    fi
 else
     # Fallback to simple y/N prompts
     info "Which additional AI agents would you like to configure?"
@@ -292,7 +322,7 @@ else
         read -p "$(echo -e ${YELLOW}  Add ${AGENTS[$key]}? [y/N]:${NC} )" -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            select_agent_once "$key"
+            select_new_agent_once "$key"
         fi
     done
 fi
@@ -677,10 +707,10 @@ if [[ -f "$SCRIPT_DIR/Brewfile" ]] && [[ ! -f "Brewfile" ]]; then
     fi
 fi
 
-HAS_GH_SELECTED=false
-for agent in "${SELECTED_AGENTS[@]}"; do
+HAS_NEW_GH_SELECTED=false
+for agent in "${NEWLY_SELECTED_AGENTS[@]}"; do
     if [[ "$agent" == "gh" ]]; then
-        HAS_GH_SELECTED=true
+        HAS_NEW_GH_SELECTED=true
         break
     fi
 done
@@ -689,7 +719,7 @@ GH_AUTH_DONE=false
 GH_AUTH_NEEDS_MANUAL=false
 GH_AUTH_MANUAL_REASON=""
 
-if [[ "$HAS_GH_SELECTED" == true ]]; then
+if [[ "$HAS_NEW_GH_SELECTED" == true ]]; then
     echo ""
     info "GitHub CLI setup"
 

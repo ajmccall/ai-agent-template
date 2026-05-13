@@ -60,11 +60,13 @@ Without anchoring to `DIRENV_FILE`, relative paths could depend on the current w
 3. uses `gum` for interactive selection when available and when a TTY exists
 4. detects agents already configured in `.envrc`
 5. creates `.agent-profile/` and selected subdirectories
-6. creates a repo-local Claude statusline script and local project settings for new Claude profiles
+6. creates a repo-local Claude statusline script and local project settings for Claude profiles
 7. generates or updates the installer-managed `.envrc` section
 8. runs `direnv allow` after generating or updating `.envrc`
 9. updates `.gitignore` with local-only entries
 10. optionally copies `Brewfile`
+
+On reruns, already configured agents are preserved. Setup steps with side effects, such as GitHub CLI authentication, only run when the relevant agent is newly added.
 
 ## Why `.gitignore` is updated
 
